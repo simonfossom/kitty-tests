@@ -708,13 +708,21 @@ def toggle_maximized(os_window_id: int = 0) -> bool:
     pass
 
 
-def toggle_floating(os_window_id: int = 0) -> bool | None:
-    """Toggle always-on-top (floating) state of an OS Window.
+def toggle_always_on_top(os_window_id: int = 0) -> bool | None:
+    """Toggle always-on-top state of an OS Window.
 
-    Returns True when now floating, False when now normal, None when
+    macOS: sets NSStatusWindowLevel and a collection behavior that joins
+    all Spaces and floats over full-screen apps. X11: sets
+    _NET_WM_STATE_ABOVE (effect depends on WM co-operation). Wayland and
+    layer-shell panels are unsupported.
+
+    Returns True when now always-on-top, False when now normal, None when
     unsupported (Wayland, layer-shell panels, or window not found).
     """
     pass
+
+
+WINDOW_ALWAYS_ON_TOP: int
 
 
 def toggle_fullscreen(os_window_id: int = 0) -> bool:

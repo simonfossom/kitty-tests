@@ -34,6 +34,7 @@ from .constants import (
     ssh_control_master_template,
 )
 from .fast_data_types import (
+    WINDOW_ALWAYS_ON_TOP,
     WINDOW_FULLSCREEN,
     WINDOW_HIDDEN,
     WINDOW_MAXIMIZED,
@@ -415,6 +416,8 @@ def parse_os_window_state(state: str) -> int:
             return WINDOW_FULLSCREEN
         case 'hidden':
             return WINDOW_HIDDEN
+        case 'always-on-top' | 'always_on_top':
+            return WINDOW_ALWAYS_ON_TOP
         case _:
             return WINDOW_NORMAL
 

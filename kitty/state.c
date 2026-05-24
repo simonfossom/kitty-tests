@@ -1824,6 +1824,7 @@ init_state(PyObject *module) {
     PyModule_AddIntMacro(module, WINDOW_MAXIMIZED);
     PyModule_AddIntMacro(module, WINDOW_HIDDEN);
     PyModule_AddIntMacro(module, WINDOW_MINIMIZED);
+    PyModule_AddIntMacro(module, WINDOW_ALWAYS_ON_TOP);
     PyModule_AddIntMacro(module, LEFT_EDGE);
     PyModule_AddIntMacro(module, RIGHT_EDGE);
     PyModule_AddIntMacro(module, TOP_EDGE);

@@ -49,6 +49,7 @@ typedef enum {
 
 void cocoa_focus_window(void *w);
 long cocoa_window_number(void *w);
+void cocoa_set_window_always_on_top(void *w, bool enabled);
 void cocoa_application_lifecycle_event(bool);
 void cocoa_recreate_global_menu(void);
 void cocoa_system_beep(const char*);

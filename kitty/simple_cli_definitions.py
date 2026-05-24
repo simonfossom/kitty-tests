@@ -482,11 +482,17 @@ without an actual window, use :option:`{appname} --start-as`=hidden.
 --start-as
 type=choices
 default=normal
-choices=normal,fullscreen,maximized,minimized,hidden
+choices=normal,fullscreen,maximized,minimized,hidden,always-on-top
 Control how the initial kitty OS window is created. Note that
 this is applies to all OS Windows if you use the :option:`{appname} --session`
 option to create multiple OS Windows. Any OS Windows state
 specified in the session file gets overriden.
+The :code:`always-on-top` value starts the window in normal size but
+pinned above other windows. On macOS this uses :code:`NSStatusWindowLevel`
+and a :code:`canJoinAllSpaces` collection behavior so the window also
+appears on every Space and over full-screen apps. On X11 it sets the
+:code:`_NET_WM_STATE_ABOVE` hint; the effect depends on window-manager
+co-operation. On Wayland it is unsupported.
 
 
 --position
