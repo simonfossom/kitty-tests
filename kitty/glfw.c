@@ -2410,6 +2410,20 @@ toggle_maximized(PyObject UNUSED *self, PyObject *args) {
 }
 
 static PyObject*
+toggle_floating(PyObject UNUSED *self, PyObject *args) {
+    id_type os_window_id = 0;
+    if (!PyArg_ParseTuple(args, "|K", &os_window_id)) return NULL;
+    OSWindow *w = os_window_id ? os_window_for_id(os_window_id) : current_os_window();
+    if (!w || !w->handle || w->is_layer_shell) Py_RETURN_NONE;
+    // Wayland: _glfwPlatformSetWindowFloating is a no-op stub; skip gracefully.
+    if (global_state.is_wayland) Py_RETURN_NONE;
+    bool is_floating = glfwGetWindowAttrib(w->handle, GLFW_FLOATING);
+    glfwSetWindowAttrib(w->handle, GLFW_FLOATING, !is_floating);
+    if (!is_floating) { Py_RETURN_TRUE; }   // now floating
+    Py_RETURN_FALSE;                         // now normal
+}
+
+static PyObject*
 cocoa_minimize_os_window(PyObject UNUSED *self, PyObject *args) {
     id_type os_window_id = 0;
     if (!PyArg_ParseTuple(args, "|K", &os_window_id)) return NULL;
@@ -3201,6 +3215,7 @@ static PyMethodDef module_methods[] = {
     METHODB(request_attention, METH_VARARGS),
     METHODB(toggle_fullscreen, METH_VARARGS),
     METHODB(toggle_maximized, METH_VARARGS),
+    METHODB(toggle_floating, METH_VARARGS),
     METHODB(change_os_window_state, METH_VARARGS),
     METHODB(glfw_window_hint, METH_VARARGS),
     METHODB(x11_display, METH_NOARGS),

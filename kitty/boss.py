@@ -124,6 +124,7 @@ from .fast_data_types import (
     set_window_being_dragged,
     start_drag_with_data,
     thread_write,
+    toggle_floating,
     toggle_fullscreen,
     toggle_maximized,
     toggle_os_window_visibility,
@@ -1354,6 +1355,14 @@ class Boss:
             if tm:
                 os_window_id = tm.os_window_id
         toggle_maximized(os_window_id)
+
+    @ac('win', 'Toggle the floating (always-on-top) status of the active OS Window')
+    def toggle_floating(self, os_window_id: int = 0) -> None:
+        if os_window_id == 0:
+            tm = self.active_tab_manager_with_dispatch
+            if tm:
+                os_window_id = tm.os_window_id
+        toggle_floating(os_window_id)
 
     @ac('misc', 'Toggle macOS secure keyboard entry')
     def toggle_macos_secure_keyboard_entry(self) -> None:

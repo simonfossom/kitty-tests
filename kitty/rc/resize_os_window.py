@@ -25,7 +25,7 @@ class ResizeOSWindow(RemoteCommand):
     match/str: Which window to resize
     self/bool: Boolean indicating whether to close the window the command is run in
     incremental/bool: Boolean indicating whether to adjust the size incrementally
-    action/choices.resize.toggle-fullscreen.toggle-maximized.toggle-visibility.hide.show.os-panel: The action to perform
+    action/choices.resize.toggle-fullscreen.toggle-maximized.toggle-floating.toggle-visibility.hide.show.os-panel: The action to perform
     unit/choices.cells.pixels: One of :code:`cells` or :code:`pixels`
     width/int: Integer indicating desired window width
     height/int: Integer indicating desired window height
@@ -46,7 +46,7 @@ class ResizeOSWindow(RemoteCommand):
     options_spec = MATCH_WINDOW_OPTION + '''\n
 --action
 default=resize
-choices=resize,toggle-fullscreen,toggle-maximized,toggle-visibility,hide,show,os-panel
+choices=resize,toggle-fullscreen,toggle-maximized,toggle-floating,toggle-visibility,hide,show,os-panel
 The action to perform.
 
 
@@ -157,6 +157,12 @@ using this option means that you will not be notified of failures.
                     )
                 elif ac == 'toggle-maximized':
                     boss.toggle_maximized(os_window_id)
+                elif ac == 'toggle-floating':
+                    from kitty.fast_data_types import toggle_floating
+                    if toggle_floating(os_window_id) is None:
+                        raise RemoteControlErrorWithoutTraceback(
+                            f'OS Window {os_window_id}: toggle-floating is not supported '
+                            f'(Wayland and layer-shell panel windows are not supported)')
         return None
 
 
