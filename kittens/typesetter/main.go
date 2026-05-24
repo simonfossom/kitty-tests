@@ -91,8 +91,8 @@ func outputJSON() error {
 	out := jsonOutput{
 		Version:       "1",
 		OSCCode:       66,
-		Unit:          "1x base = 1 cell row; 1x body = 2 cell rows (s=2)",
-		Subdivision:   SubdivisionBits,
+		Unit:          "body=1.6 cells (s=2,n=4/5); row=2 cells; super+sub=row",
+		Subdivision:   CellSubunits,
 		BodyBaseCells: BodyCellRows,
 		Typography:    typo,
 		Spacing:       spacing,
