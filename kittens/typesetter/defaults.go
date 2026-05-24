@@ -9,10 +9,14 @@
 // 1× base unit = 1 terminal cell row height.
 // Body text = s=2 (2 cell rows, full visual height = 2 base units = "1× body").
 //
-// This allows superscript and subscript to stack vertically within the same
-// inline row as body text: super occupies the top 1.25 cells of the 2-row
-// block (v=0), sub occupies the bottom 1.25 cells (v=1). Both share s=2 with
-// body text so they fit on the same terminal line.
+// super + sub = body:
+//
+//	superscript = s=2, n=1/d=2, v=0 → 1 cell (top row)
+//	subscript   = s=2, n=1/d=2, v=1 → 1 cell (bottom row)
+//	1 + 1 = 2 = body  ✓
+//
+// All three share s=2 so they fit on the same terminal line. Super occupies
+// exactly the top cell row of the body block; sub occupies exactly the bottom.
 //
 // # Inline vs block layout
 //
@@ -142,17 +146,18 @@ var TypographyLevels = []TypographyLevel{
 		ScaleBody: 0.6875, ScaleCells: 1.375,
 		PadTop: 0.3125, PadBot: 0.3125, Inline: true},
 
-	// superscript: 0.625× body = 1.25 cells → s=2, n=5, d=8, v=0 (top)
-	// PadTop=0 (flush top), PadBot = 2 - 1.25 = 0.75 cells
-	{Name: "superscript", S: 2, N: 5, D: 8, V: 0, H: 0, Rows: 2,
-		ScaleBody: 0.625, ScaleCells: 1.25,
-		PadTop: 0.0, PadBot: 0.75, Inline: true},
+	// superscript: 0.5× body = 1 cell → s=2, n=1, d=2, v=0 (top)
+	// super + sub = 1 + 1 = 2 = body  ✓
+	// PadTop=0 (flush to top row), PadBot = 1.0 (entire bottom row is empty)
+	{Name: "superscript", S: 2, N: 1, D: 2, V: 0, H: 0, Rows: 2,
+		ScaleBody: 0.5, ScaleCells: 1.0,
+		PadTop: 0.0, PadBot: 1.0, Inline: true},
 
-	// subscript: 0.625× body = 1.25 cells → s=2, n=5, d=8, v=1 (bottom)
-	// PadBot=0 (flush bottom), PadTop = 2 - 1.25 = 0.75 cells
-	{Name: "subscript", S: 2, N: 5, D: 8, V: 1, H: 0, Rows: 2,
-		ScaleBody: 0.625, ScaleCells: 1.25,
-		PadTop: 0.75, PadBot: 0.0, Inline: true},
+	// subscript: 0.5× body = 1 cell → s=2, n=1, d=2, v=1 (bottom)
+	// PadBot=0 (flush to bottom row), PadTop = 1.0 (entire top row is empty)
+	{Name: "subscript", S: 2, N: 1, D: 2, V: 1, H: 0, Rows: 2,
+		ScaleBody: 0.5, ScaleCells: 1.0,
+		PadTop: 1.0, PadBot: 0.0, Inline: true},
 }
 
 // SpacingTokens lists the 10-tier spacing scale in body-relative units.
