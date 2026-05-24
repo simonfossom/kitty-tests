@@ -1425,6 +1425,8 @@ toggle_maximized_for_os_window(OSWindow *w) {
     return maximized;
 }
 
+static int set_os_window_always_on_top(OSWindow *w, bool enabled);
+
 static void
 change_state_for_os_window(OSWindow *w, int state) {
     if (!w || !w->handle) return;
@@ -1444,6 +1446,11 @@ change_state_for_os_window(OSWindow *w, int state) {
             break;
         case WINDOW_HIDDEN:
             glfwHideWindow(w->handle); break;
+        case WINDOW_ALWAYS_ON_TOP:
+            // Pseudo-state used by `--start-as always-on-top`: leave the
+            // window at its current normal state but enable always-on-top.
+            set_os_window_always_on_top(w, true);
+            break;
     }
 }
 
@@ -1716,7 +1723,7 @@ create_os_window(PyObject UNUSED *self, PyObject *args, PyObject *kw) {
     } else {
         if (optional_x && optional_x != Py_None) { if (!PyLong_Check(optional_x)) { PyErr_SetString(PyExc_TypeError, "x must be an int"); return NULL;} x = (int)PyLong_AsLong(optional_x); }
         if (optional_y && optional_y != Py_None) { if (!PyLong_Check(optional_y)) { PyErr_SetString(PyExc_TypeError, "y must be an int"); return NULL;} y = (int)PyLong_AsLong(optional_y); }
-        if (window_state < WINDOW_NORMAL || window_state > WINDOW_HIDDEN) window_state = WINDOW_NORMAL;
+        if (window_state < WINDOW_NORMAL || window_state > WINDOW_ALWAYS_ON_TOP) window_state = WINDOW_NORMAL;
     }
     if (PyErr_Occurred()) return NULL;
     if (lsc && window_state != WINDOW_HIDDEN) window_state = WINDOW_NORMAL;
@@ -2409,6 +2416,40 @@ toggle_maximized(PyObject UNUSED *self, PyObject *args) {
     Py_RETURN_FALSE;
 }
 
+// Set the always-on-top state of an OS Window. Returns the new state, or -1
+// when the platform/window does not support it (Wayland, layer-shell panel,
+// or invalid window). Tracks state on the OSWindow struct so callers can
+// query without round-tripping through the WM.
+static int
+set_os_window_always_on_top(OSWindow *w, bool enabled) {
+    if (!w || !w->handle || w->is_layer_shell) return -1;
+    if (global_state.is_wayland) return -1;
+#ifdef __APPLE__
+    if (!glfwGetCocoaWindow) return -1;
+    void *nswindow = glfwGetCocoaWindow(w->handle);
+    if (!nswindow) return -1;
+    // macOS: NSStatusWindowLevel + collectionBehavior for true always-on-top
+    // (above Dock and Menu Bar, joins all Spaces, floats over full-screen apps).
+    cocoa_set_window_always_on_top(nswindow, enabled);
+#else
+    // X11: glfwSetWindowAttrib(GLFW_FLOATING) sends _NET_WM_STATE_ABOVE.
+    glfwSetWindowAttrib(w->handle, GLFW_FLOATING, enabled);
+#endif
+    w->always_on_top = enabled;
+    return enabled ? 1 : 0;
+}
+
+static PyObject*
+toggle_always_on_top(PyObject UNUSED *self, PyObject *args) {
+    id_type os_window_id = 0;
+    if (!PyArg_ParseTuple(args, "|K", &os_window_id)) return NULL;
+    OSWindow *w = os_window_id ? os_window_for_id(os_window_id) : current_os_window();
+    int r = set_os_window_always_on_top(w, w && !w->always_on_top);
+    if (r < 0) Py_RETURN_NONE;
+    if (r) Py_RETURN_TRUE;   // now always-on-top
+    Py_RETURN_FALSE;          // now normal
+}
+
 static PyObject*
 cocoa_minimize_os_window(PyObject UNUSED *self, PyObject *args) {
     id_type os_window_id = 0;
@@ -2434,7 +2475,7 @@ change_os_window_state(PyObject *self UNUSED, PyObject *args) {
     if (!PyArg_ParseTuple(args, "i|K", &state, &wid)) return NULL;
     OSWindow *w = wid ? os_window_for_id(wid) : current_os_window();
     if (!w || !w->handle) Py_RETURN_NONE;
-    if (state < WINDOW_NORMAL || state > WINDOW_MINIMIZED) {
+    if (state < WINDOW_NORMAL || state > WINDOW_ALWAYS_ON_TOP) {
         PyErr_SetString(PyExc_ValueError, "Unknown window state");
         return NULL;
     }
@@ -3201,6 +3242,7 @@ static PyMethodDef module_methods[] = {
     METHODB(request_attention, METH_VARARGS),
     METHODB(toggle_fullscreen, METH_VARARGS),
     METHODB(toggle_maximized, METH_VARARGS),
+    METHODB(toggle_always_on_top, METH_VARARGS),
     METHODB(change_os_window_state, METH_VARARGS),
     METHODB(glfw_window_hint, METH_VARARGS),
     METHODB(x11_display, METH_NOARGS),

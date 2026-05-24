@@ -23,7 +23,7 @@
 
 typedef enum { LEFT_EDGE = 1, TOP_EDGE = 2, RIGHT_EDGE = 4, BOTTOM_EDGE = 8 } Edge;
 typedef enum { REPEAT_MIRROR, REPEAT_CLAMP, REPEAT_DEFAULT } RepeatStrategy;
-typedef enum { WINDOW_NORMAL, WINDOW_FULLSCREEN, WINDOW_MAXIMIZED, WINDOW_MINIMIZED, WINDOW_HIDDEN } WindowState;
+typedef enum { WINDOW_NORMAL, WINDOW_FULLSCREEN, WINDOW_MAXIMIZED, WINDOW_MINIMIZED, WINDOW_HIDDEN, WINDOW_ALWAYS_ON_TOP } WindowState;
 
 typedef struct UrlPrefix {
     char_type string[16];
@@ -462,7 +462,7 @@ typedef struct OSWindow {
     uint64_t render_calls;
     id_type last_focused_counter;
     CloseRequest close_request;
-    bool is_layer_shell, hide_on_focus_loss;
+    bool is_layer_shell, hide_on_focus_loss, always_on_top;
     struct { int x, y; } last_drag_event;
 } OSWindow;
 

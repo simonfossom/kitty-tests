@@ -982,6 +982,28 @@ cocoa_window_number(void *w) {
     return [window windowNumber];
 }
 
+void
+cocoa_set_window_always_on_top(void *w, bool enabled) {
+    // Per Kovid Goyal (kitty issue #7145) and dljsjr's macOS analysis:
+    // NSFloatingWindowLevel sits below the Dock and Menu Bar. For a true
+    // "always on top" that floats over full-screen apps and Spaces, we need:
+    //   - setLevel:NSStatusWindowLevel (sits above Dock / Menu Bar)
+    //   - setCollectionBehavior with cross-Spaces and full-screen-aux flags
+    NSWindow *window = (NSWindow*)w;
+    if (!window) return;
+    if (enabled) {
+        [window setLevel:NSStatusWindowLevel];
+        NSWindowCollectionBehavior behavior =
+            NSWindowCollectionBehaviorCanJoinAllSpaces |
+            NSWindowCollectionBehaviorFullScreenAuxiliary |
+            NSWindowCollectionBehaviorTransient;
+        [window setCollectionBehavior:behavior];
+    } else {
+        [window setLevel:NSNormalWindowLevel];
+        [window setCollectionBehavior:NSWindowCollectionBehaviorDefault];
+    }
+}
+
 size_t
 cocoa_get_workspace_ids(void *w, size_t *workspace_ids, size_t array_sz) {
     NSWindow *window = (NSWindow*)w;
