@@ -708,6 +708,15 @@ def toggle_maximized(os_window_id: int = 0) -> bool:
     pass
 
 
+def toggle_floating(os_window_id: int = 0) -> bool | None:
+    """Toggle always-on-top (floating) state of an OS Window.
+
+    Returns True when now floating, False when now normal, None when
+    unsupported (Wayland, layer-shell panels, or window not found).
+    """
+    pass
+
+
 def toggle_fullscreen(os_window_id: int = 0) -> bool:
     pass
 
