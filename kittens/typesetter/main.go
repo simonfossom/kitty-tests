@@ -137,6 +137,36 @@ func outputEnv() {
 	fmt.Printf("TYPESETTER_SUBDIVISION=%d\n", SubdivisionBits)
 }
 
+// notationExpr renders a base character with simultaneous superscript and
+// subscript: base^super_sub. All three share s=2 so they fit on the same
+// terminal line. Super occupies the top cell row (v=0), sub the bottom (v=1).
+//
+// Layout (body = 2 rows, super = sub = 1 row each):
+//
+//	row 0: [base] [super...]
+//	row 1: [base] [sub  ]
+//
+// After writing super, the cursor moves back (CSI D) to the start of super
+// so that sub prints at the same horizontal columns — producing true stacking.
+// All arguments must be printable ASCII (1 byte = 1 column).
+func notationExpr(base, super, sub string) string {
+	var b strings.Builder
+	body, _ := LevelByName("body")
+	supLvl, _ := LevelByName("superscript")
+	subLvl, _ := LevelByName("subscript")
+
+	b.WriteString(osc66(body, base))   // base: full body height
+	b.WriteString(osc66(supLvl, super)) // super: top cell row only
+	// cursor is now past super; move back to stack sub at same columns
+	b.WriteString(fmt.Sprintf("\x1b[%dD", len(super)))
+	b.WriteString(osc66(subLvl, sub)) // sub: bottom cell row only
+	// advance cursor past the wider of the two (sub may be narrower than super)
+	if advance := len(super) - len(sub); advance > 0 {
+		b.WriteString(fmt.Sprintf("\x1b[%dC", advance))
+	}
+	return b.String()
+}
+
 // --- demo output ---
 
 func runDemo() (rc int, err error) {
@@ -147,47 +177,77 @@ func runDemo() (rc int, err error) {
 
 	lp.OnInitialize = func() (string, error) {
 		var b strings.Builder
-
-		b.WriteString("\r\n")
-		b.WriteString("  \x1b[1mtypesetter kitten\x1b[0m — OSC 66 typography defaults demo\r\n")
-		b.WriteString("  Press any key to exit.\r\n\r\n")
-
-		// Render each typography level
-		for _, l := range TypographyLevels {
-			label := fmt.Sprintf("%-12s  s=%-2d", l.Name, l.S)
-			if l.N != 0 {
-				label += fmt.Sprintf(" n=%-2d d=%-2d", l.N, l.D)
-			} else {
-				label += "           "
-			}
-			label += fmt.Sprintf("  %.3f× body", l.ScaleBody)
-			sample := fmt.Sprintf("The quick brown fox  %s", label)
-			b.WriteString("  ")
-			b.WriteString(osc66(l, sample))
-			b.WriteString("\r\n")
-		}
-
-		// Inline demo: body + superscript + subscript on the same line
-		b.WriteString("\r\n")
-		b.WriteString("  Inline demo (all s=2, same line):\r\n  ")
-
 		body, _ := LevelByName("body")
 		sup, _ := LevelByName("superscript")
 		sub, _ := LevelByName("subscript")
 
-		b.WriteString(osc66(body, "H"))
-		b.WriteString(osc66(sub, "2"))
-		b.WriteString(osc66(body, "O"))
-		b.WriteString(osc66(sup, "2"))
-		b.WriteString(osc66(body, "  (hydrogen peroxide: body + sub + sup in one s=2 row)"))
-		b.WriteString("\r\n\r\n")
+		b.WriteString("\r\n")
+		b.WriteString("  \x1b[1mtypesetter kitten\x1b[0m — OSC 66 typography defaults\r\n")
+		b.WriteString("  Press any key to exit.\r\n")
 
-		// Spacing visual ruler
-		b.WriteString("  Spacing tokens (horizontal):\r\n")
+		// ── Notation examples ────────────────────────────────────────────────
+		// These are the primary use case: simultaneous super + sub on the same
+		// base character. Plain text / codeblocks cannot represent them.
+		// All elements share s=2; super (n=1/2, v=0) occupies the top cell row,
+		// sub (n=1/2, v=1) the bottom. super + sub = 1+1 = 2 = body. ✓
+		b.WriteString("\r\n")
+		b.WriteString("  \x1b[2m─── Notation (OSC 66 only — codeblocks cannot render these) ───\x1b[0m\r\n\r\n")
+
+		type example struct{ label, base, super, sub string }
+		sections := []struct {
+			heading  string
+			examples []example
+		}{
+			{"Computer Science", []example{
+				{"Algorithm state", "S", "(t)", "k"},
+				{"Graph theory",    "v", "i",   "j"},
+				{"Neural network",  "h", "(l)", "i"},
+			}},
+			{"Economics", []example{
+				{"Indexed variable", "P", "t", "i"},
+				{"Panel data",       "Y", "t", "n"},
+			}},
+		}
+
+		for _, sec := range sections {
+			b.WriteString(fmt.Sprintf("  \x1b[1m%s\x1b[0m\r\n", sec.heading))
+			for _, ex := range sec.examples {
+				b.WriteString("    ")
+				b.WriteString(osc66(body, ex.label+":  "))
+				b.WriteString(notationExpr(ex.base, ex.super, ex.sub))
+				b.WriteString(osc66(body, "   "))
+				// show params inline
+				b.WriteString(osc66(body, fmt.Sprintf(
+					"base s=%d  |  super s=%d n=%d/d=%d v=%d  |  sub s=%d n=%d/d=%d v=%d",
+					body.S,
+					sup.S, sup.N, sup.D, sup.V,
+					sub.S, sub.N, sub.D, sub.V,
+				)))
+				b.WriteString("\r\n")
+			}
+			b.WriteString("\r\n")
+		}
+
+		// ── Typography scale ─────────────────────────────────────────────────
+		b.WriteString("  \x1b[2m─── Typography scale ───────────────────────────────────────────\x1b[0m\r\n\r\n")
+		for _, l := range TypographyLevels {
+			frac := "        "
+			if l.N != 0 {
+				frac = fmt.Sprintf("n=%d/d=%d ", l.N, l.D)
+			}
+			label := fmt.Sprintf("%-12s s=%d %s %.4g× body", l.Name, l.S, frac, l.ScaleBody)
+			b.WriteString("  ")
+			b.WriteString(osc66(l, "Aa  "+label))
+			b.WriteString("\r\n")
+		}
+		b.WriteString("\r\n")
+
+		// ── Spacing ruler ────────────────────────────────────────────────────
+		b.WriteString("  \x1b[2m─── Spacing tokens (horizontal cols) ──────────────────────────\x1b[0m\r\n\r\n")
 		for _, s := range SpacingTokens {
 			pad := strings.Repeat(" ", s.HCols)
-			b.WriteString(fmt.Sprintf("  %-5s |%s|  h=%d cols  v_body=%.3f\r\n",
-				s.Name, pad, s.HCols, s.VBody))
+			b.WriteString(fmt.Sprintf("  %-5s |%s|  h=%2d cols  v=%d rows  (%.3f× body)\r\n",
+				s.Name, pad, s.HCols, s.VRows, s.VBody))
 		}
 		b.WriteString("\r\n")
 
