@@ -24,6 +24,7 @@ import (
 	"github.com/kovidgoyal/kitty/kittens/ssh"
 	"github.com/kovidgoyal/kitty/kittens/themes"
 	"github.com/kovidgoyal/kitty/kittens/transfer"
+	"github.com/kovidgoyal/kitty/kittens/typesetter"
 	"github.com/kovidgoyal/kitty/kittens/unicode_input"
 	"github.com/kovidgoyal/kitty/tools/cli"
 	"github.com/kovidgoyal/kitty/tools/cmd/at"
@@ -106,6 +107,8 @@ func KittyToolEntryPoints(root *cli.Command) {
 	command_palette.EntryPoint(root)
 	// query-terminal
 	query_terminal.EntryPoint(root)
+	// typesetter
+	typesetter.EntryPoint(root)
 	// __pytest__
 	pytest.EntryPoint(root)
 	// __hold_till_enter__
